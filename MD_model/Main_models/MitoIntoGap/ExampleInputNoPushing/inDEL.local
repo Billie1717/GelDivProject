@@ -1,0 +1,3231 @@
+#####################################################
+log                 logDEL.txt
+units               lj
+dimension           3
+atom_style          molecular
+boundary            p p p
+#read_restart        spindle.restart.6600000
+read_restart        restart.postaster
+
+mass                7 1.0 #mass of mitos 
+variable            ron equal 6.0                              # growth rate [monomers/s]
+variable            roff equal 10.0                                # shrink time [monomers/s]
+variable            rnuc equal 0.5                                # nucleation rate [filaments/s]
+variable            rbr equal 0.06666666666666667                                # branching rate [filaments/s]
+variable            rGTP equal 0.5                               # switch rate from GTP->GDP [/s]
+variable            rGDP equal 0.5                               # switch rate from GTP->GDP [/s]
+
+variable            Kbond equal 700                               # bond constant [kT/sigma2]
+variable            Kbend equal 1000                               # bend constant [kT/sigma2]
+variable            BranchAng equal 12.0                               # Total branching angle (will be split into two) [degrees]
+variable            eps equal 0.5                               # interaction strength 
+variable            epsB equal 0.0                               # interaction strength of branch junction bead 
+variable            eps_dd equal 1.0                               # interaction strength of diffusors wt dif 
+variable            eps_df equal 5.0                               # interaction strength of diffusors wt fil 
+variable            lamda equal 0.2                               # interaction strength of diffusors wt fil 
+variable            sigma equal 1.0                               # diameter of filament beads 
+variable            sigma_dd equal 6.0                               # diameter of diffusors 
+variable            sigma_df equal 3.5                               #  
+variable            rc_dd equal 12.0                               # radius cutoff 
+variable            rc_df equal 3.5                               #  
+variable            rc equal 1.0                               #  
+variable            tstep equal  0.0005                                 # simulation timestep size [seconds]
+variable            run_time equal 2000.0                            # simulation run time [seconds]
+variable            tsteploop equal 20000.0                            # simulation run time [seconds]
+variable            frame_rate equal 10.0                          # dumping interval [seconds]
+variable            frame_rate2 equal 50.0                          # dumping interval [seconds]
+variable            OvaR1 equal 0.7                          # 
+variable            OvaR2 equal 3.5                          # 
+variable            pole_distance equal 35.0                          # 
+variable            factor equal 10.0                          # 
+variable            seed equal 1.0                                  # random number generator seed
+variable            angleImp equal ${BranchAng}/10.0                          # growth probability
+variable            kon atom ${ron}/${factor}                       # growth probability
+variable            knuc atom ${rnuc}/1.0                        # nucleation probability
+variable            koff atom ${roff}/${factor}                        # shrink probability 
+variable            sGTP atom ${rGTP}/${factor}                        # switch rate from GTP->GDP
+variable            sGDP atom ${rGDP}/${factor}                        # switch rate from GTP->GDP
+variable            kbr atom ${rbr}/${factor}                         # branching probability
+variable            rstep equal 100/${tstep}                      # reaction interval [simulation steps]
+variable            run_steps equal ${run_time}/${tstep}          # simulation run time [simulation steps]
+variable            dump_time equal ${frame_rate}/${tstep}        # dumping interval [simulation steps]
+variable            restart_time equal ${frame_rate2}/${tstep}        # dumping interval [simulation steps]
+variable 		    yCoord atom y
+variable 		    yEdge atom yhi
+variable 		    zCoord atom z
+variable 		    zEdge atom zhi
+variable 		    xCoord atom x
+variable 		    xEdge atom xhi
+variable 		    ID atom id
+variable            stab_steps equal 1
+
+group               ghosts type 4
+group               NucEnd type 2
+group               MTs type 1 2 3 5 6
+group               Mito type 7
+
+special_bonds       lj 1.0 1.0 1.0
+bond_style          harmonic
+bond_coeff          1 ${Kbond} 1.0
+
+angle_style         harmonic
+angle_coeff         1 ${Kbend} 180.0
+angle_coeff	        2 ${Kbend} ${BranchAng}
+
+pair_style          hybrid/overlay lj/cut/soft 1 0.5 ${rc_df} cosine/squared ${rc_df}
+pair_coeff          * * cosine/squared 0.00 2.00 ${rc_df}
+pair_coeff          * * lj/cut/soft 0.0 ${sigma} ${lamda} ${rc_df}
+pair_coeff          1 1 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          1 2 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          1 3 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          2 2 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          2 3 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          3 3 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          5 1 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          5 2 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          5 3 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          5 5 cosine/squared ${eps} ${sigma} ${rc} wca
+pair_coeff          6 1 cosine/squared ${epsB} ${sigma} ${rc} wca
+pair_coeff          6 2 cosine/squared ${epsB} ${sigma} ${rc} wca
+pair_coeff          6 3 cosine/squared ${epsB} ${sigma} ${rc} wca
+pair_coeff          6 5 cosine/squared ${epsB} ${sigma} ${rc} wca
+pair_coeff          6 6 cosine/squared ${epsB} ${sigma} ${rc} wca
+pair_coeff          7 6 cosine/squared ${epsB} ${sigma_df} ${rc_df} wca
+pair_coeff          7 1 lj/cut/soft ${eps_df} ${sigma_df} ${lamda} ${rc_df} #Mitochondria have soft core repulsion with the MTs
+pair_coeff          7 2 lj/cut/soft ${eps_df} ${sigma_df} ${lamda} ${rc_df}
+pair_coeff          7 3 lj/cut/soft ${eps_df} ${sigma_df} ${lamda} ${rc_df}
+pair_coeff          7 5 lj/cut/soft ${eps_df} ${sigma_df} ${lamda} ${rc_df}
+pair_coeff          7 7 cosine/squared ${eps_dd} ${sigma_dd} ${rc_dd} wca
+
+special_bonds  	lj 0.0 0.0 0.5 
+
+# Nucleation reactions molecular templates
+molecule            mPreNucleation Reactions/Nuc/pre_Nucleation.txt
+molecule            mPostNucleation Reactions/Nuc/post_Nucleation.txt
+
+# Death reactions molecular templates
+molecule            mPreDeath Reactions/Nuc/pre_Death.txt
+molecule            mPostDeath Reactions/Nuc/post_Death.txt
+
+# Poly reactions molecular templates
+molecule            mPreDimerOn Reactions/Poly/pre_DimerOn.txt
+molecule            mPostDimerOn Reactions/Poly/post_DimerOn.txt
+molecule            mPreTrimerOn Reactions/Poly/pre_TrimerOn.txt
+molecule            mPostTrimerOn Reactions/Poly/post_TrimerOn.txt
+molecule            mPreOligomerOn Reactions/Poly/pre_OligomerOn.txt
+molecule            mPostOligomerOn Reactions/Poly/post_OligomerOn.txt
+
+# Depol reactions molecular templates
+molecule            mPreDimerOff Reactions/Depoly/pre_DimerOff.txt
+molecule            mPostDimerOff Reactions/Depoly/post_DimerOff.txt
+molecule            mPreTrimerOff Reactions/Depoly/pre_TrimerOff.txt
+molecule            mPostTrimerOff Reactions/Depoly/post_TrimerOff.txt
+molecule            mPreOligomerOff Reactions/Depoly/pre_OligomerOff.txt
+molecule            mPostOligomerOff Reactions/Depoly/post_OligomerOff.txt
+
+# Tip switch reactions molecular templates
+molecule            mPreDimerGDP Reactions/Tip/pre_DimerTipGDP.txt
+molecule            mPreDimerGTP Reactions/Tip/pre_DimerTipGTP.txt
+molecule            mPreTrimerGDP Reactions/Tip/pre_TrimerTipGDP.txt
+molecule            mPreTrimerGTP Reactions/Tip/pre_TrimerTipGTP.txt
+molecule            mPreOligomerGDP Reactions/Tip/pre_OligomerTipGDP.txt
+molecule            mPreOligomerGTP Reactions/Tip/pre_OligomerTipGTP.txt
+
+# Branching reactions molecular templates
+molecule            mPostBranch1_0 Reactions/Branch/post_branch1_0.txt
+molecule            mPostBranch1_1 Reactions/Branch/post_branch1_1.txt
+molecule            mPostBranch1_2 Reactions/Branch/post_branch1_2.txt
+molecule            mPostBranch1_3 Reactions/Branch/post_branch1_3.txt
+molecule            mPostBranch1_4 Reactions/Branch/post_branch1_4.txt
+molecule            mPostBranch1_5 Reactions/Branch/post_branch1_5.txt
+molecule            mPostBranch1_6 Reactions/Branch/post_branch1_6.txt
+molecule            mPostBranch1_7 Reactions/Branch/post_branch1_7.txt
+molecule            mPostBranch1_8 Reactions/Branch/post_branch1_8.txt
+molecule            mPostBranch1_9 Reactions/Branch/post_branch1_9.txt
+molecule            mPostBranch1_10 Reactions/Branch/post_branch1_10.txt
+molecule            mPostBranch1_11 Reactions/Branch/post_branch1_11.txt
+molecule            mPostBranch1_12 Reactions/Branch/post_branch1_12.txt
+molecule            mPostBranch1_13 Reactions/Branch/post_branch1_13.txt
+molecule            mPostBranch1_14 Reactions/Branch/post_branch1_14.txt
+
+molecule            mPreBranch1 Reactions/Branch/pre_branch1.txt
+molecule            mPreBranch3 Reactions/Branch/pre_branch3.txt
+molecule            mPostBranch3 Reactions/Branch/post_branch3.txt
+molecule            mPreBranch4 Reactions/Branch/pre_branch4.txt
+molecule            mPostBranch4 Reactions/Branch/post_branch4.txt
+molecule            mPreBranch3Off_v2 Reactions/Branch/pre_branchDepol3_v2.txt
+molecule            mPostBranch3Off_v2 Reactions/Branch/post_branchDepol3_v2.txt
+molecule            mPreBranch3Off Reactions/Branch/pre_branchDepol3.txt
+molecule            mPostBranch3Off Reactions/Branch/post_branchDepol3.txt
+molecule            mPreBranch4Off Reactions/Branch/pre_branchDepol4.txt
+molecule            mPostBranch4Off Reactions/Branch/post_branchDepol4.txt
+molecule            mPreBranch4Off_v2 Reactions/Branch/pre_branchDepol4_v2.txt
+molecule            mPostBranch4Off_v2 Reactions/Branch/post_branchDepol4_v2.txt
+
+#Cleaning Up Branch Junctions
+molecule            mPreBranchAng Reactions/Depoly/pre_BranchAngle.txt
+molecule            mPostBranchAng Reactions/Depoly/post_BranchAngle.txt
+
+
+variable            realtime equal step*${tstep}
+
+
+############# GROUPS AND COUNTING ###############
+
+variable            vMaskGTPType atom "type==3"
+group               FilGTP dynamic all var vMaskGTPType every 1
+variable            vNumGTP equal count(FilGTP)
+variable            vMaskGDPType atom "type==5"
+group               FilGDP dynamic all var vMaskGDPType every 1
+variable            vNumGDP equal count(FilGDP)
+
+variable            vMaskAlive atom "type==1 || type==2 || type==3 || type==5"
+group               alive dynamic all var vMaskAlive every 1
+variable            vNumAlive equal count(alive)
+
+fix                 fLang all langevin 1.0 1.0 1.0 ${seed}
+fix                 fNVE AllAtoms_REACT nve
+
+#-------HISTORICAL DELETING MIDDLE ATOMS --------------#
+#fix                 fBreak MtsInMidzoneO bond/break ${run_steps} 1 0.9 prob 1 1234
+#delete_bonds        MtsInMidzoneO multi remove
+#---------------------------------------------------#
+
+
+dump                1 all custom ${dump_time} outputDEL.xyz id mol type x y z 
+dump_modify         1 format line "%d %d %d %.2f %.2f %.2f"
+
+thermo              ${dump_time}
+compute_modify      thermo_temp dynamic/dof yes
+thermo_style        custom step v_realtime temp pe ke etotal epair ebond eangle press vol density atoms
+
+compute             cBonds all property/local batom1 batom2 btype
+
+dump                2 all local ${dump_time} bondsDEL.dump c_cBonds[*]
+dump_modify         2 format line "%f %f %f"
+
+restart             ${restart_time} spindle.restart
+
+fix                 print_thermo all ave/time ${dump_time} 1 ${dump_time} v_vNumGTP v_vNumGDP v_vNumAlive file thermo3.txt
+timestep      ${tstep}
+
+#-------HISTORICAL DELETING MIDDLE ATOMS --------------#
+#run 100
+#unfix fBreak
+#reset_atoms mol all
+#delete_atoms        group MtsInMidzoneI mol no bond yes
+#run                 ${run_steps}
+#fix                 fBreak MtsInMidzone bond/break ${run_steps} 1 0.9 prob 1 1234
+#delete_bonds        MtsInMidzone multi remove
+#run 100
+#unfix fBreak
+#reset_atoms mol all
+#delete_atoms        group MtsInMidzoneI mol no bond yes 
+#reset_atoms mol MTs
+#---------------------------------------------------#
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+#group MtsInMidzoneO dynamic MTs region regionboxO every 100
+set group MtsInMidzoneO type 4
+run 100
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+
+
+#delete_bonds        MtsInMidzoneO multi remove
+set group MtsInMidzoneO type 4
+group InMidzoneO delete
+group MtsInMidzoneO delete
+group MTs delete
+region regionboxO delete
+group               MTs type 1 2 3 5 6 
+region regionboxO block -9.0 9.0 -50.0 50.0 -50.0 50.0
+group InMidzoneO region regionboxO
+group MtsInMidzoneO intersect MTs InMidzoneO
+set group MtsInMidzoneO type 4  
+run                 ${tsteploop}
+write_restart	restart.postcut
+

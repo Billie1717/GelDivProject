@@ -1,0 +1,35 @@
+map file: styrene growth
+
+2 edgeIDs
+3 equivalences
+2 createIDs
+5 constraints
+
+InitiatorIDs
+
+2
+3
+
+EdgeIDs
+
+1
+3
+
+CreateIDs
+
+4
+5
+
+Equivalences
+
+1  1
+2  2
+3  3
+
+Constraints
+
+custom "(rxnave(v_ID,1)-rxnave(v_ID,2)) < -1"
+custom "rxndiffIvan(v_kbr,1) > random(0,1,1234)"
+custom "(rxnave(v_yCoord,1))*(rxnave(v_yCoord,1)) < (rxnave(v_yEdge,1)*rxnave(v_yEdge,1))*0.99"
+custom "(rxnave(v_zCoord,1))*(rxnave(v_zCoord,1)) < (rxnave(v_zEdge,1)*rxnave(v_zEdge,1))*0.99"
+custom "(rxnave(v_xCoord,1))*(rxnave(v_xCoord,1)) < (rxnave(v_xEdge,1)*rxnave(v_xEdge,1))"
