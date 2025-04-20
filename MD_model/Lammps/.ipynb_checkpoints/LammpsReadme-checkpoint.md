@@ -13,10 +13,11 @@ make yes-extra-pair
 make yes-rigid
 make yes-molecule
 make yes-reaction
+make yes-FEP
 
 # Files edited in folder /src
 
-For specifying the geometry of newly nucleated microtubule beads
+For specifying the geometry of newly nucleated microtubule beads as well as the different sizes for microtubule beads not to grow against
 
 REACTION/fix_bond_react.cpp
 REACTION/fix_bond_react.h

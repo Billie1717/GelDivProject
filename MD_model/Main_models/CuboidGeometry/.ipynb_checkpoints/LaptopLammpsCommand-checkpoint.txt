@@ -1,0 +1,1 @@
+/Users/billiemeadowcroft/Dropbox/lammps-15Jun2023/src/lmp_serial -in in.local

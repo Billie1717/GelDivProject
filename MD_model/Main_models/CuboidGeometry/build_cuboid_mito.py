@@ -266,8 +266,8 @@ variable            realtime equal step*${tstep}
 dump                1 all custom ${dump_time} output.xyz id mol type x y z 
 dump_modify         1 format line "%d %d %d %.2f %.2f %.2f"
 
-dump                3 Mito custom ${dump_time} outputMito.xyz id mol type x y z vx vy vz c_displacement[1] c_displacement[2] c_displacement[3] c_displacement[4]
-dump_modify         3 format line "%d %d %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f"
+#dump                3 Mito custom ${dump_time} outputMito.xyz id mol type x y z vx vy vz c_displacement[1] c_displacement[2] c_displacement[3] c_displacement[4]
+#dump_modify         3 format line "%d %d %d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f"
 
 thermo              ${dump_time}
 compute_modify      thermo_temp dynamic/dof yes

@@ -4,6 +4,7 @@
 - Some parameters, particularly the parameters governing MT dynamics, were explored previously and we subsequently keep fixed as they are broadly mapped to experimental values. These are listed below. 
 - It is best when understanding the model to first look at "CuboidGeometry" then "AsterGeometry" then "MitoIntoGap" as these are increasing in complexity and the simpler parameters introduced in CuboidGeometry are not re-commented in the more complex setups. 
 - Unfortunately, the nucleation pattern of the microtubules is coded in the lammps source code. I have set up a handful of useful nucleation patterns which can be called in the fix bond/react nucleation line. Only if one wants to nucleate in a different way than those already coded, you must go into the source code and create a new nucleation 'rule'. Nucleation is explained below.
+- Please first download and combile the correct Lammps version with the altered fix_bond_react source codes, as described in Lammps/LammpsReadme.md
 
 
 ## Parameters kept fixed:

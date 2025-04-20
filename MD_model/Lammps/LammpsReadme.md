@@ -13,6 +13,7 @@ make yes-extra-pair
 make yes-rigid
 make yes-molecule
 make yes-reaction
+make yes-FEP
 
 # Files edited in folder /src
 

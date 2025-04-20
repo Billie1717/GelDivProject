@@ -18,18 +18,18 @@ for seed in 1 #2 3
 do
 for Ndiff in 400 #200 300
 do 
-filepattern='runs/runsRc1.5_rnuc_'${rnuc}'_rbr_'${rbr}'_N_'${Ndiff}'_sigD_'${sigma_d}'_epsDD_'${eps_dd}'_epsDF_'${eps_df}'_mass_'${mass_d}'_factor_'${factor}'_seed_'${seed}'/'
+filepattern='ExampleRun/runsRc1.5_rnuc_'${rnuc}'_rbr_'${rbr}'_N_'${Ndiff}'_sigD_'${sigma_d}'_epsDD_'${eps_dd}'_epsDF_'${eps_df}'_mass_'${mass_d}'_factor_'${factor}'_seed_'${seed}'/'
 mkdir ${filepattern}
-cp -r 'Inputs/Reactions/' ${filepattern}
+cp -r 'Inputs/Reactions' ${filepattern}
 cd ${filepattern}
-python /nfs/scistore15/saricgrp/bmeadowc/Scratch/CytoDiv/Reaction_model/Experiment1/build_cuboid_mito.py ${rnuc} ${rbr} ${sigma_d} ${eps_dd} ${eps_df} ${factor} ${seed} #Change to your own directory
-python /nfs/scistore15/saricgrp/bmeadowc/Scratch/CytoDiv/Reaction_model/Experiment1/build_config.py ${Ndiff} ${sigma_d} ${mass_d} #Change to your own directory
+python /Users/billiemeadowcroft/Dropbox/PhDGithub/RemoteGelDiv/MD_model/Main_models/CuboidGeometry/build_cuboid_mito.py ${rnuc} ${rbr} ${sigma_d} ${eps_dd} ${eps_df} ${factor} ${seed} #Change to your own directory
+python /Users/billiemeadowcroft/Dropbox/PhDGithub/RemoteGelDiv/MD_model/Main_models/CuboidGeometry/build_config.py ${Ndiff} ${sigma_d} ${mass_d} #Change to your own directory
 for i in $(seq 0 $numPhisM)
 do
 filefile='post_branch1_'${i}'.txt'
 mv -f ${filefile} 'Reactions/Branch/'
 done
-sbatch runscript.sh
+#sbatch runscript.sh
 cd ..
 cd ..
 done
