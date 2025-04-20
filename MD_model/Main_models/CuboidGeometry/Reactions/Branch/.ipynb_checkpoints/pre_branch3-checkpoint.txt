@@ -1,0 +1,33 @@
+molecule template: end of chain plus polymerized styrene
+
+     3 atoms
+     2 bonds
+     1 angles
+     3 fragments
+
+Types
+
+    1 1
+    2 6
+    3 3
+
+Bonds
+
+    1 1 1 2
+    2 1 2 3
+
+Molecules
+
+    1 0
+    2 0
+    3 0
+
+Angles
+
+    1 1 1 2 3
+
+Fragments
+
+    1 1
+    2 3
+    3 2 3

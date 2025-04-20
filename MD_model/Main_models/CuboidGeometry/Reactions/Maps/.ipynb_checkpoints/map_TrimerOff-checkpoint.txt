@@ -3,13 +3,16 @@
 4 equivalences
 1 deleteIDs
 1 constraints
-
+1 edgeIDs
 
 InitiatorIDs
 
 2
 3
 
+EdgeIDs
+
+1
 
 Equivalences
 

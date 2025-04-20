@@ -1,13 +1,13 @@
 # Pre molecule template for nucleation reaction
 
-2 atoms
+3 atoms
 1 fragments
-
 
 Types
 
 1 2
-2 5
+2 2
+3 5
 
 Fragments
 

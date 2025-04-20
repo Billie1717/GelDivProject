@@ -1,7 +1,7 @@
 # Map for growth reaction on dimer (filament nucleus)
 
 2 equivalences
-2 createIDs
+3 createIDs
 1 constraints
 
 InitiatorIDs
@@ -18,7 +18,7 @@ CreateIDs
 
 3
 4
-
+5
 
 Constraints
 

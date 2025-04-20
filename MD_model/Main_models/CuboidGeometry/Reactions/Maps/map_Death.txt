@@ -1,7 +1,7 @@
 # Map for growth reaction on dimer (filament nucleus)
 
-2 equivalences
-2 deleteIDs
+3 equivalences
+3 deleteIDs
 1 constraints
 
 InitiatorIDs
@@ -13,12 +13,13 @@ Equivalences
 
 1 1
 2 2
+3 3
 
 DeleteIDs
 
 1
 2
-
+3
 
 Constraints
 

@@ -1,5 +1,6 @@
 # Map for growth reaction on trimer
 
+1 edgeIDs
 3 equivalences
 1 createIDs
 3 constraints
@@ -10,6 +11,9 @@ InitiatorIDs
 2
 3
 
+EdgeIDs
+
+1
 
 Equivalences
 
