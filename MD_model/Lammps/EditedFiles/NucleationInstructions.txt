@@ -1,37 +1,60 @@
-OPTIONS:
+- Nucleation of an MT is written in the input file with in the bond/react fix as :
+$ react Nucleation all ${rstep} 0.900000 1.100000 mPreNucleation mPostNucleation Reactions/Maps/map_Nucleation.txt prob 1.0 ${seed} stabilize_steps ${stab_steps} modify_create overlap ${OvaR1} ${OvaR2} modify_create nuc xwalls -2 &
+- Particularly important is the flag that comes after 'nuc'. See below for description of different flags and the geometries they produce.
+- OvaR1 should always be ~0.9 and this is the minimum distance between a newly added MT bead and any other MT bead
+- OvaR2 specifies the minimum distance between a newly added MT and a bead of type 7. This should be set to 0.5*(sigma + sigma_d) where sigma = MT diameter and sigma_d = mito diameter
 
-nuc mod X 
-nuc string X
-where X > 1
 
-Positions and orientations given in lines ~3833
+##############################################################
+#----------if string == xwalls----------#
+##############################################################
+xwalls means we nucleation microtubules with a random y- and z- coordinate, but at each x-wall and they will be nucleated with the polarity pointing inwards (plus-end pointing towards the middle of the simulation box). Here, the flag '-2' will mean the MTs will nucleate on both walls, and flag '-3' will mean they nucleate only on the xlo wall.
 
-if string == yes
-flag == 1
-X = nothing
-
-if string == xor
-flag == 0
-X = nothing
-
-if string == mod
-flag = X (>1)
-X = distribution width of angles
-
-if string == polewalls
-if string == xwalls
 flag = X (<-1)
-if X == -2, both walls, if X == -3, one wall
-
-if string == aster
-flag > 2 (flag = pole-pole distance)
-
-if string == aster2nd
-flag < -3 (flag = (-) pole-pole distance of first asters)
-
-if string == xWallsMiddle
-flag = 1000
-X = nothing
+if X == -2, both walls, if X == -3, one wall (xlo wall)
+Example, X=-2:
+react Nucleation all ${rstep} 0.900000 1.100000 mPreNucleation mPostNucleation Reactions/Maps/map_Nucleation.txt prob 1.0 ${seed} stabilize_steps ${stab_steps} modify_create overlap ${OvaR1} ${OvaR2} modify_create nuc xwalls -2 &
 
 
-xwallsAsters, xwallsMiddle
+##############################################################
+#----------if string == asters----------#
+##############################################################
+Nucleates microtubules from two circles which are Pdist away from eachother (two poles)
+flag = X (>2) = Pdist
+Here the flag as a physical meaning which is the pole-to-pole distance
+Example, we want pole-topole distance to be 20 sigma::
+react Nucleation all ${rstep} 0.900000 1.100000 mPreNucleation mPostNucleation Reactions/Maps/map_Nucleation.txt prob 1.0 ${seed} stabilize_steps ${stab_steps} modify_create overlap ${OvaR1} ${OvaR2} modify_create nuc asters 20 &
+
+
+##############################################################
+#----------if string == asters2nd----------#
+##############################################################
+flag = X (<-3) = -Pdist
+Here the flag as a physical meaning which is the (-ve) pole-to-pole distance in the x-direction. The next two asters will be a distance Pdist*(0.5/sqrt(2)) in the y-direction.
+Example, we want pole-to-pole distance to be 20 sigma::
+react Nucleation all ${rstep} 0.900000 1.100000 mPreNucleation mPostNucleation Reactions/Maps/map_Nucleation.txt prob 1.0 ${seed} stabilize_steps ${stab_steps} modify_create overlap ${OvaR1} ${OvaR2} modify_create nuc asters2nd -20 &
+
+##############################################################
+#----------if string == xwallsMiddle----------#
+##############################################################
+NO FLAG
+This is for nucleating MTs towards the middle, pointing directly towards eachother (midzone microtubules)
+Example, we want pole-to-pole distance to be 20 sigma::
+react Nucleation all ${rstep} 0.900000 1.100000 mPreNucleation mPostNucleation Reactions/Maps/map_Nucleation.txt prob 1.0 ${seed} stabilize_steps ${stab_steps} modify_create overlap ${OvaR1} ${OvaR2} modify_create nuc xwallsMiddle &
+... this is very by hand and the geometry chosen is specified in the source code. 
+
+##############################################################
+#----------if string == xwallsAsters----------#
+##############################################################
+NO FLAG
+This is for nucleating MTs towards the outside, pointing isotropically away from poles (asteral microtubules)
+Example, we want pole-to-pole distance to be 20 sigma::
+react Nucleation all ${rstep} 0.900000 1.100000 mPreNucleation mPostNucleation Reactions/Maps/map_Nucleation.txt prob 1.0 ${seed} stabilize_steps ${stab_steps} modify_create overlap ${OvaR1} ${OvaR2} modify_create nuc xwallsAsters &
+... this is very by hand and the geometry chosen is specified in the source code. 
+
+
+##############################################################
+#----------if string == DiffusorsMidzone----------#
+##############################################################
+
+These are my diffusors nucleating in the midzone, not actually for MT nucleation! Specifies a region in the midzone where the 'diffusors' which destroy microtubules nucleate
