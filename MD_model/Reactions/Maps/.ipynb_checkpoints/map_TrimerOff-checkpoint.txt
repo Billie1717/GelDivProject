@@ -1,0 +1,32 @@
+# Map for growth reaction on trimer
+
+4 equivalences
+1 deleteIDs
+1 constraints
+1 edgeIDs
+
+InitiatorIDs
+
+2
+3
+
+EdgeIDs
+
+1
+
+Equivalences
+
+1 1
+2 2
+3 3
+4 4
+
+
+DeleteIDs
+
+4
+
+
+Constraints
+
+custom "rxndiffIvan(v_koff,2) > random(0,1,1234)"
