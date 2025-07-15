@@ -17,7 +17,7 @@ Types
     1 2
     2 1
     3 1
-    4 4
+    4 3
 
 Molecules
 
